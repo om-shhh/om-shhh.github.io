@@ -11,10 +11,10 @@ permalink: /writing/
     <a href="{{ essay.url | relative_url }}" class="card-link">
       <div class="card">
         <div>
-          <h3>{{ essay.title | downcase }}</h3>
+          <h3>{{ essay.title }}</h3>
           <p>{{ essay.description }}</p>
         </div>
-        <span class="meta-pill">{{ essay.date | date: "%b %Y" | downcase }}</span>
+        <span class="meta-pill">{{ essay.date | date: "%b %Y" }}</span>
       </div>
     </a>
   {% endfor %}

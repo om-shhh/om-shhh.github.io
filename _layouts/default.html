@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ page.title | downcase }} | {{ site.title | downcase }}</title>
+  <title>{{ page.title }} | {{ site.title }}</title>
 
   <!-- Google Fonts: Schibsted Grotesk & Montserrat -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,7 +48,6 @@
       font-weight: 700;
       letter-spacing: -0.02em;
       margin-bottom: 16px;
-      text-transform: lowercase;
     }
 
     .site-title a {
@@ -73,7 +72,6 @@
       border-radius: 20px;
       background-color: transparent;
       transition: all 0.2s ease;
-      text-transform: lowercase;
     }
 
     nav a:hover {
@@ -87,7 +85,6 @@
       color: var(--text-color);
       font-weight: 600;
       letter-spacing: -0.01em;
-      text-transform: lowercase;
     }
 
     h1 {
@@ -98,6 +95,11 @@
 
     p {
       color: var(--text-color);
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
     }
 
     /* Grid Layout for Essays & Quotes */
@@ -156,7 +158,6 @@
       padding: 4px 10px;
       border-radius: 12px;
       width: fit-content;
-      text-transform: lowercase;
     }
 
     /* Quote Card Styling */
@@ -181,7 +182,6 @@
       font-weight: 600;
       font-size: 0.85rem;
       color: var(--text-muted);
-      text-transform: lowercase;
     }
 
     footer {
@@ -190,18 +190,17 @@
       border-top: 1px solid var(--border-color);
       font-size: 0.85rem;
       color: var(--text-muted);
-      text-transform: lowercase;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="site-title"><a href="{{ '/' | relative_url }}">om shah</a></div>
+    <div class="site-title"><a href="{{ '/' | relative_url }}">Om Shah</a></div>
     <nav>
-      <a href="{{ '/' | relative_url }}">home</a>
-      <a href="{{ '/writing' | relative_url }}">writing</a>
-      <a href="{{ '/quotes' | relative_url }}">quotes</a>
+      <a href="{{ '/' | relative_url }}">Home</a>
+      <a href="{{ '/writing' | relative_url }}">Writing</a>
+      <a href="{{ '/quotes' | relative_url }}">Quotes</a>
     </nav>
   </header>
 
@@ -210,7 +209,7 @@
   </main>
 
   <footer>
-    <p>om shah &copy; {{ 'now' | date: "%Y" }}</p>
+    <p>Om Shah &copy; {{ 'now' | date: "%Y" }}</p>
   </footer>
 
 </body>
