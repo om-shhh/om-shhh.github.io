@@ -12,14 +12,35 @@
 
   <style>
     :root {
-      --bg-color: #fbf9f5;
+      --terracotta: #bc6c50;
+      --teal: #304c53;
+      --sky: #afe0e7;
+      --blush: #ddad9c;
+      --brown: #5a2f25;
+
+      --bg-color: #fbf4f0;
       --card-bg: #ffffff;
-      --text-color: #242424;
-      --text-muted: #6b665e;
-      --border-color: #e8e3d9;
-      --accent-color: #2b2b2b;
-      --hover-bg: #f3efe6;
-      --pill-bg: #efeae1;
+      --text-color: #304c53;
+      --heading-color: #5a2f25;
+      --text-muted: #7a5b50;
+      --border-color: #efd9d0;
+      --accent-color: #bc6c50;
+      --hover-bg: #f5e3db;
+      --pill-bg: #afe0e7;
+      --pill-text: #304c53;
+    }
+
+    ::selection {
+      background: var(--sky);
+      color: var(--brown);
+    }
+
+    a {
+      color: var(--accent-color);
+    }
+
+    a:hover {
+      color: var(--brown);
     }
 
     * {
@@ -51,7 +72,7 @@
     }
 
     .site-title a {
-      color: var(--text-color);
+      color: var(--brown);
       text-decoration: none;
     }
 
@@ -75,14 +96,14 @@
     }
 
     nav a:hover {
-      background-color: var(--pill-bg);
-      color: var(--text-color);
+      background-color: var(--teal);
+      color: var(--bg-color);
     }
 
     /* Typography */
     h1, h2, h3, h4 {
       font-family: 'Schibsted Grotesk', sans-serif;
-      color: var(--text-color);
+      color: var(--heading-color);
       font-weight: 600;
       letter-spacing: -0.01em;
     }
@@ -131,8 +152,8 @@
 
     .card:hover {
       transform: translateY(-2px);
-      border-color: #ccc6b8;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+      border-color: var(--blush);
+      box-shadow: 0 8px 20px rgba(90, 47, 37, 0.08);
     }
 
     .card h3 {
@@ -153,7 +174,7 @@
       display: inline-block;
       font-size: 0.75rem;
       font-weight: 500;
-      color: var(--text-muted);
+      color: var(--pill-text);
       background-color: var(--pill-bg);
       padding: 4px 10px;
       border-radius: 12px;
@@ -167,6 +188,7 @@
       border-radius: 12px;
       padding: 24px;
       position: relative;
+      border-left: 4px solid var(--terracotta);
     }
 
     .quote-card p {
@@ -181,6 +203,13 @@
       font-family: 'Schibsted Grotesk', sans-serif;
       font-weight: 600;
       font-size: 0.85rem;
+      color: var(--terracotta);
+    }
+
+    blockquote {
+      margin-left: 0;
+      padding-left: 16px;
+      border-left: 3px solid var(--blush);
       color: var(--text-muted);
     }
 
