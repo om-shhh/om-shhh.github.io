@@ -1,0 +1,8 @@
+title: Om Shah
+description: Personal Site & Writing Portfolio
+
+# Enable custom collection for your writing
+collections:
+  writing:
+    output: true
+    permalink: /writing/:path/
