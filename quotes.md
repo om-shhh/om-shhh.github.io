@@ -1,18 +1,18 @@
 ---
 layout: default
-title: Quotes
+title: quotes
 permalink: /quotes/
 ---
 
-# Selected Quotes
+# quotes
 
 <div class="grid-container">
   {% for q in site.data.quotes %}
     <div class="quote-card">
-      <p>"{{ q.quote }}"</p>
-      <div class="quote-author">— {{ q.author }}</div>
+      <p>“{{ q.quote }}”</p>
+      <div class="quote-author">— {{ q.author | downcase }}</div>
       {% if q.note %}
-        <small style="color: #888;">Note: {{ q.note }}</small>
+        <div style="margin-top: 8px;"><span class="meta-pill">{{ q.note | downcase }}</span></div>
       {% endif %}
     </div>
   {% endfor %}
