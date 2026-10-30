@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mid-Atlantic Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  #filters {
+    position: absolute; z-index: 1000; top: 10px; right: 10px;
+    background: #fff; padding: 10px 12px; border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.3); font-size: 14px; max-width: 220px;
+  }
+  #filters h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #555; }
+  #filters label { display: flex; align-items: center; gap: 6px; margin: 4px 0; cursor: pointer; }
+  .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.3); }
+  #status { margin-top: 6px; font-size: 12px; color: #777; }
+  .popup h3 { margin: 0 0 4px; font-size: 16px; }
+  .popup .type { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .popup a { color: #0b6bcb; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="filters">
+  <h4>Show</h4>
+  <div id="filter-list"></div>
+  <div id="status">Loading…</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+// ====== SETTINGS: edit these ======
+// Paste your published-CSV link here (Google Sheets: File > Share > Publish to web > choose the sheet tab > CSV).
+// Leave empty to use the sample data below.
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSQvMQ78aV6Y3oIQBBd9lD_kw4Guzk-VmCj7qhiwxAWtGZjv2v9JQOefQfFky_5ZZ9SqTkefshb0WCM/pub?gid=0&single=true&output=csv";
+
+// Where the map starts (roughly DC / MD / VA). The map zooms to fit your pins after loading.
+const START_CENTER = [38.9, -77.2];
+const START_ZOOM = 8;
+
+// Colors per "Map Item Type". Any type not listed gets a color from the fallback palette.
+const TYPE_COLORS = {
+  "Farms": "#2e8b57",
+  "Organizations": "#0275d8",
+  "Restaurant/Shop": "#e67e22",
+  "Courses": "#8e44ad",
+  "Builders": "#a0522d",
+  "Nursery": "#7cb342"
+};
+const FALLBACK_COLORS = ["#d9534f", "#0275d8", "#f0ad4e", "#8e44ad", "#17a2b8", "#e83e8c", "#6c757d"];
+// ==================================
+
+const SAMPLE_CSV = `Map Item Type,Name,Address,City,State,Zip Code,Latitute,Longitude,Website
+Farms,Honey's Harvest,5801 Brooks Woods Road,Lothian,Maryland,20711,38.7984,-76.623,https://honeysharvest.com/
+Farms,Starbright Farm,2950 Garrett Rd,White Hall,Maryland,21161,39.65917,-76.57434,https://www.starbright-farm.com/
+Farms,Foxhaven Organic Farm & Learning Center,3630 Poffenberger Rd,Jefferson,Maryland,21755,39.3339,-77.5584,https://foxhavenfarm.org/
+Farms,Redemption Springs Farm,2414 Patapsco Rd,Finksburg,Maryland,21048,39.5169,-76.9158,https://redemptionsprings.com/`;
+
+const map = L.map("map").setView(START_CENTER, START_ZOOM);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 18,
+  attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, OpenStreetMap contributors'
+}).addTo(map);
+
+const layers = {};      // type -> L.layerGroup
+const colors = {};      // type -> color
+let fallbackIndex = 0;
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+// Find a column by loose name matching, so small header typos (e.g. "Latitute") don't break things.
+function findKey(keys, test) { return keys.find(k => test(k.trim().toLowerCase())); }
+
+function colorFor(type) {
+  if (!colors[type]) {
+    colors[type] = TYPE_COLORS[type] || FALLBACK_COLORS[fallbackIndex++ % FALLBACK_COLORS.length];
+  }
+  return colors[type];
+}
+
+function isApproved(v) {
+  return ["true", "yes", "y", "approved", "x", "1", "✓"].includes(String(v ?? "").trim().toLowerCase());
+}
+
+function render(rows) {
+  if (!rows.length) { document.getElementById("status").textContent = "No rows found."; return; }
+  const keys = Object.keys(rows[0]);
+  const K = {
+    type: findKey(keys, k => k.includes("type")),
+    name: findKey(keys, k => k === "name"),
+    address: findKey(keys, k => k === "address"),
+    city: findKey(keys, k => k === "city"),
+    state: findKey(keys, k => k === "state"),
+    zip: findKey(keys, k => k.startsWith("zip")),
+    lat: findKey(keys, k => k.startsWith("lat")),
+    lng: findKey(keys, k => k.startsWith("lon") || k.startsWith("lng")),
+    web: findKey(keys, k => k.startsWith("web") || k === "url"),
+    approved: findKey(keys, k => k === "approved")   // optional moderation column
+  };
+
+  const bounds = [];
+  let shown = 0, skipped = 0;
+
+  rows.forEach(r => {
+    if (K.approved && !isApproved(r[K.approved])) { skipped++; return; }
+    const lat = parseFloat(r[K.lat]), lng = parseFloat(r[K.lng]);
+    if (!isFinite(lat) || !isFinite(lng)) { skipped++; return; }
+
+    const type = (r[K.type] || "Other").trim();
+    const color = colorFor(type);
+    if (!layers[type]) layers[type] = L.layerGroup().addTo(map);
+
+    const web = (r[K.web] || "").trim();
+    const webHtml = /^https?:\/\//i.test(web)
+      ? `<a href="${esc(web)}" target="_blank" rel="noopener">Visit website</a>` : "";
+    const addr2 = [r[K.city], r[K.state]].filter(Boolean).join(", ") + (r[K.zip] ? " " + r[K.zip] : "");
+
+    L.circleMarker([lat, lng], {
+      radius: 8, color: "#fff", weight: 2, fillColor: color, fillOpacity: 0.95
+    }).bindPopup(
+      `<div class="popup"><h3>${esc(r[K.name])}</h3>
+       <div class="type">${esc(type)}</div>
+       <div>${esc(r[K.address])}<br>${esc(addr2)}</div>
+       <div style="margin-top:6px">${webHtml}</div></div>`
+    ).addTo(layers[type]);
+
+    bounds.push([lat, lng]);
+    shown++;
+  });
+
+  // Build filter checkboxes
+  const list = document.getElementById("filter-list");
+  list.innerHTML = "";
+  Object.keys(layers).sort().forEach(type => {
+    const label = document.createElement("label");
+    label.innerHTML = `<input type="checkbox" checked><span class="swatch" style="background:${colors[type]}"></span>${esc(type)}`;
+    label.querySelector("input").addEventListener("change", e => {
+      e.target.checked ? layers[type].addTo(map) : map.removeLayer(layers[type]);
+    });
+    list.appendChild(label);
+  });
+
+  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+  document.getElementById("status").textContent =
+    `${shown} location${shown === 1 ? "" : "s"}` + (skipped ? ` (${skipped} hidden)` : "");
+}
+
+function parse(csvText) {
+  return Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
+}
+
+if (SHEET_CSV_URL) {
+  fetch(SHEET_CSV_URL)
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(t => render(parse(t)))
+    .catch(err => {
+      document.getElementById("status").textContent = location.protocol === "file:"
+        ? "Can't load the sheet from a local file. Host this page (e.g. Netlify Drop or GitHub Pages) or run it from a local web server."
+        : "Couldn't load the sheet (" + err.message + "). Check the published CSV link.";
+      console.error(err);
+    });
+} else {
+  render(parse(SAMPLE_CSV));
+}
+</script>
+</body>
+</html>
